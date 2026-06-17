@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'New' }} alert · Cypher{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <h3 class="mb-3">{{ 'Edit alert' if mode == 'edit' else 'New alert' }}</h3>
+    <form method="post" id="alert-form">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input class="form-control" name="name" value="{{ alert.get('name','') }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label d-block">Alert type</label>
+            {% set atype = alert.get('alert_type','conditional') %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="alert_type" id="type-cond" value="conditional" {{ 'checked' if atype != 'scheduled' }}>
+              <label class="form-check-label" for="type-cond">Conditional (fires when condition is met)</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="alert_type" id="type-sched" value="scheduled" {{ 'checked' if atype == 'scheduled' }}>
+              <label class="form-check-label" for="type-sched">Scheduled (time based)</label>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Trading pair</label>
+              <input class="form-control" name="trading_pair" placeholder="ADA_USDT" value="{{ alert.get('trading_pair','') }}" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Primary exchange</label>
+              <select class="form-select" name="exchange_primary">
+                {% for code, label in exchanges %}
+                <option value="{{ code }}" {{ 'selected' if alert.get('exchange_primary') == code }}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Secondary exchange</label>
+              <select class="form-select" name="exchange_secondary">
+                <option value="">— none —</option>
+                {% for code, label in exchanges %}
+                <option value="{{ code }}" {{ 'selected' if alert.get('exchange_secondary') == code }}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <p class="text-muted small mb-0">
+            <strong>Difference</strong> is computed as <code>primary − secondary</code>
+            (primary funding fee minus secondary funding fee).
+          </p>
+        </div>
+      </div>
+
+      <!-- Conditional settings -->
+      <div class="card shadow-sm mb-3" id="conditional-section">
+        <div class="card-header fw-semibold">Conditional settings</div>
+        <div class="card-body">
+          <div class="row align-items-end mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Check every (minutes)</label>
+              <input class="form-control" type="number" min="1" name="check_interval_minutes"
+                     value="{{ alert.get('check_interval_minutes','') }}" placeholder="60">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Combine conditions with</label>
+              <select class="form-select" name="condition_logic">
+                <option value="AND" {{ 'selected' if alert.get('condition_logic','AND') == 'AND' }}>AND (all must hold)</option>
+                <option value="OR" {{ 'selected' if alert.get('condition_logic') == 'OR' }}>OR (any holds)</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="form-label">Conditions</label>
+          <p class="text-muted small mb-2">Funding fees and threshold values are in <strong>percent (%)</strong>
+            — e.g. enter <code>0.04</code> to mean 0.04%.</p>
+          <div id="conditions"></div>
+          <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-condition">+ Add condition</button>
+        </div>
+      </div>
+
+      <!-- Scheduled settings -->
+      <div class="card shadow-sm mb-3" id="scheduled-section">
+        <div class="card-header fw-semibold">Schedule settings</div>
+        <div class="card-body">
+          {% set skind = alert.get('schedule_kind','daily') %}
+          <div class="mb-3">
+            <label class="form-label d-block">Schedule type</label>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="schedule_kind" id="sk-daily" value="daily" {{ 'checked' if skind != 'interval' }}>
+              <label class="form-check-label" for="sk-daily">Daily at a time (IST)</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="schedule_kind" id="sk-interval" value="interval" {{ 'checked' if skind == 'interval' }}>
+              <label class="form-check-label" for="sk-interval">Every N hours</label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3" id="daily-field">
+              <label class="form-label">Time (IST)</label>
+              <input class="form-control" type="time" name="daily_time_ist"
+                     value="{% if alert.get('daily_time_ist') is string %}{{ alert.get('daily_time_ist') }}{% elif alert.get('daily_time_ist') %}{{ alert.daily_time_ist.strftime('%H:%M') }}{% endif %}">
+            </div>
+            <div class="col-md-4 mb-3" id="interval-field">
+              <label class="form-label">Every (hours)</label>
+              <input class="form-control" type="number" min="1" name="interval_hours"
+                     value="{{ alert.get('interval_hours','') }}" placeholder="8">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" type="submit">{{ 'Save changes' if mode == 'edit' else 'Create alert' }}</button>
+      <a class="btn btn-link" href="{{ url_for('dashboard.index') }}">Cancel</a>
+    </form>
+  </div>
+</div>
+
+<script>
+  window.CYPHER = {
+    exchanges: {{ exchanges|tojson }},
+    operators: {{ operators|tojson }},
+    existingConditions: {{ conditions|tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/alert_form.js') }}"></script>
+{% endblock %}

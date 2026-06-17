@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Settings · Cypher{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <h3 class="mb-3">Notification settings</h3>
+    <p class="text-muted">Toggle each channel on or off. Alerts are sent to every channel that is switched on.</p>
+
+    <form method="post">
+      <!-- Discord -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Discord</span>
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="discord_enabled"
+                   name="discord_enabled" {{ 'checked' if s.get('discord_enabled') == '1' }}>
+            <label class="form-check-label" for="discord_enabled">Enabled</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <label class="form-label">Webhook URL</label>
+          <input class="form-control" type="text" name="discord_webhook_url"
+                 value="{{ s.get('discord_webhook_url','') }}"
+                 placeholder="https://discord.com/api/webhooks/...">
+        </div>
+      </div>
+
+      <!-- Telegram -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Telegram</span>
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="telegram_enabled"
+                   name="telegram_enabled" {{ 'checked' if s.get('telegram_enabled') == '1' }}>
+            <label class="form-check-label" for="telegram_enabled">Enabled</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Bot token</label>
+            <input class="form-control" type="text" name="telegram_bot_token"
+                   value="{{ s.get('telegram_bot_token','') }}" placeholder="123456:ABC-...">
+          </div>
+          <div class="mb-0">
+            <label class="form-label">Chat ID</label>
+            <input class="form-control" type="text" name="telegram_chat_id"
+                   value="{{ s.get('telegram_chat_id','') }}" placeholder="-1001234567890">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" type="submit">Save settings</button>
+      <a class="btn btn-link" href="{{ url_for('dashboard.index') }}">Back to dashboard</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

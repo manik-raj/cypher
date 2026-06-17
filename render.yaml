@@ -1,0 +1,31 @@
+# Render Blueprint for Cypher.
+# One web service runs the UI, backend, and the in-process scheduler.
+# Use a paid/always-on plan, OR keep UptimeRobot pinging /health so the
+# instance doesn't sleep and stop the scheduler.
+services:
+  - type: web
+    name: cypher
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: waitress-serve --listen=0.0.0.0:$PORT app:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.3"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL          # set to the Aiven (then production) connection string
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: DEFAULT_ADMIN_USERNAME
+        value: admin
+      - key: DEFAULT_ADMIN_PASSWORD
+        sync: false
+      - key: APP_TIMEZONE
+        value: Asia/Kolkata
+      - key: SCHEDULER_ENABLED
+        value: "1"

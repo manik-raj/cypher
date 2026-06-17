@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Cypher{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="m-0">Dashboard</h3>
+  <a class="btn btn-primary" href="{{ url_for('alerts.new') }}">+ New alert</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-semibold">Alerts</span>
+    <span class="badge bg-secondary">{{ alerts|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if alerts %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle m-0">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th><th>Type</th><th>Pair</th><th>Exchanges</th>
+            <th>Condition / Schedule</th><th>Status</th><th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in alerts %}
+          <tr id="alert-{{ a.id }}">
+            <td class="fw-semibold">{{ a.name }}</td>
+            <td><span class="badge bg-{{ 'info' if a.alert_type == 'conditional' else 'primary' }}">{{ a.alert_type }}</span></td>
+            <td><code>{{ a.trading_pair }}</code></td>
+            <td>{{ a.exchanges_text }}</td>
+            <td>
+              {% if a.alert_type == 'conditional' %}
+                <div class="small text-muted">{{ a.schedule_text }} · {{ a.condition_logic }}</div>
+                {% for ct in a.condition_texts %}<div class="small">• {{ ct }}</div>{% endfor %}
+              {% else %}
+                <div class="small">{{ a.schedule_text }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-{{ 'success' if a.status == 'active' else 'secondary' }}">{{ a.status }}</span>
+            </td>
+            <td class="text-end text-nowrap">
+              <form class="d-inline" method="post" action="{{ url_for('alerts.run_now', alert_id=a.id) }}">
+                <button class="btn btn-sm btn-outline-primary" title="Check/send now">Run now</button>
+              </form>
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('alerts.edit', alert_id=a.id) }}">Edit</a>
+              {% if a.status == 'active' %}
+              <form class="d-inline" method="post" action="{{ url_for('alerts.pause', alert_id=a.id) }}">
+                <button class="btn btn-sm btn-outline-warning">Pause</button>
+              </form>
+              {% else %}
+              <form class="d-inline" method="post" action="{{ url_for('alerts.resume', alert_id=a.id) }}">
+                <button class="btn btn-sm btn-outline-success">Resume</button>
+              </form>
+              {% endif %}
+              <form class="d-inline" method="post" action="{{ url_for('alerts.delete', alert_id=a.id) }}"
+                    onsubmit="return confirm('Delete this alert?');">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-muted m-3">No alerts yet. Create one to get started.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header fw-semibold">Recent alert activity</div>
+  <div class="card-body p-0">
+    {% if history %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle m-0">
+        <thead class="table-light"><tr><th>When</th><th>Alert</th><th>Status</th><th>Message</th></tr></thead>
+        <tbody>
+          {% for h in history %}
+          <tr>
+            <td class="small text-nowrap">{{ h.triggered_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="small">{{ h.alert_name }}</td>
+            <td><span class="badge bg-{{ 'success' if h.delivery_status == 'sent' else 'danger' }}">{{ h.delivery_status }}</span></td>
+            <td class="small text-truncate" style="max-width: 420px;">{{ h.error or h.message_text }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-muted m-3">No alerts have fired yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-semibold">Tracked pairs <span class="text-muted small">(phase 2)</span></span>
+    <span class="badge bg-secondary">{{ trackers|length }}</span>
+  </div>
+  <div class="card-body">
+    <p class="text-muted m-0">Tracking is part of phase 2.</p>
+  </div>
+</div>
+{% endblock %}
