@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Status
 
 Phase 1 built and verified end-to-end against an Aiven Postgres dev DB: auth + admin seed,
-exchange adapters (Antarctic live; Kcex geo-blocked from this host but code matches the
-documented API), alerts CRUD (both types), the alert engine + Telegram notifier + IST-aligned
+exchange adapters (Antarctic + Kcex both verified live), alerts CRUD (both types), the alert
+engine + Discord/Telegram notifier + IST-aligned
 APScheduler, dashboard, and `/health`. Phase 2 (tracking history + Aster) is not built; its
 DB tables already exist in `001_init.sql`. Requirements doc: `resources/project.pdf`.
 
@@ -69,6 +69,11 @@ to its native symbol format.
 
 Interface: `code`, `display_name`, `to_symbol(pair)`, `fetch_funding(pair) -> {funding_rate,
 next_collection_time, raw}`.
+
+All adapters fetch via `base.http_get_json`, which uses **`curl_cffi` with browser TLS
+impersonation** (`impersonate="chrome"`). This is required: Kcex's WAF fingerprints the TLS
+handshake (JA3) and 403s plain `requests`/`httpx` clients — the issue is the TLS fingerprint,
+not headers or IP. Don't switch adapters back to plain `requests`.
 
 | Exchange | Phase | Symbol format | Endpoint | Rate field |
 |----------|-------|---------------|----------|------------|

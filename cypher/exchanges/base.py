@@ -11,6 +11,21 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from curl_cffi import requests as _http
+
+# Some exchanges (e.g. Kcex) sit behind a WAF that fingerprints the TLS
+# ClientHello (JA3) and 403s plain Python clients. curl_cffi impersonates a real
+# browser's TLS/HTTP fingerprint so these requests look like a browser.
+_IMPERSONATE = "chrome"
+_TIMEOUT = 10
+
+
+def http_get_json(url: str, params: dict | None = None, timeout: int = _TIMEOUT) -> dict:
+    """GET a JSON endpoint with browser TLS impersonation. Raises on HTTP error."""
+    resp = _http.get(url, params=params, impersonate=_IMPERSONATE, timeout=timeout)
+    resp.raise_for_status()
+    return resp.json()
+
 
 @dataclass
 class FundingRate:

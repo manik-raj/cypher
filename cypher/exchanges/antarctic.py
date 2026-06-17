@@ -3,12 +3,9 @@
 Endpoint: GET https://prod-gateway.antarctic.exchange/futures/fapi/market/v1/public/q/funding-rate?symbol=ada_usdt
 Sample:   {"code":0,"msg":"success","data":{"symbol":"ada_usdt","fundingRate":"0.000748","nextCollectionTime":1781596800000},"bizCode":null}
 """
-import requests
-
-from .base import ExchangeAdapter, FundingRate
+from .base import ExchangeAdapter, FundingRate, http_get_json
 
 _URL = "https://prod-gateway.antarctic.exchange/futures/fapi/market/v1/public/q/funding-rate"
-_TIMEOUT = 10
 
 
 class AntarcticAdapter(ExchangeAdapter):
@@ -21,9 +18,7 @@ class AntarcticAdapter(ExchangeAdapter):
 
     def fetch_funding(self, pair: str) -> FundingRate:
         symbol = self.to_symbol(pair)
-        resp = requests.get(_URL, params={"symbol": symbol}, timeout=_TIMEOUT)
-        resp.raise_for_status()
-        payload = resp.json()
+        payload = http_get_json(_URL, params={"symbol": symbol})
         if payload.get("code") != 0:
             raise ValueError(f"Antarctic error for {symbol}: {payload.get('msg')}")
         data = payload.get("data") or {}

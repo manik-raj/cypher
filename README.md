@@ -77,5 +77,7 @@ Set `DATABASE_URL`, `TELEGRAM_*`, and `DEFAULT_ADMIN_PASSWORD` in the Render das
 (they are `sync: false`). Point **UptimeRobot** at `/health` to keep a free-tier instance
 awake so the scheduler keeps running.
 
-> **Kcex access note:** Kcex's API is geo/IP-restricted (returns 403 from some regions/hosts).
-> Verify reachability from your Render region early; Antarctic is unaffected.
+> **Kcex access note:** Kcex's WAF fingerprints the TLS handshake and 403s plain Python HTTP
+> clients. Exchange requests therefore go through `curl_cffi` with browser impersonation
+> (`base.http_get_json`), which makes them look like a real browser. If a future exchange 403s,
+> the same approach applies.
